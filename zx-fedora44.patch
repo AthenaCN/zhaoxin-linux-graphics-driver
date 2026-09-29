@@ -1,0 +1,1225 @@
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/Makefile /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/Makefile
+--- /tmp/zx-orig/usr/src/zx-21.00.91/Makefile	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/Makefile	2026-09-27 22:54:38.867576989 +0800
+@@ -1,11 +1,11 @@
+ 
+ TARGET_ARCH ?= x86_64
+ DEBUG ?= 0
+-EXTRA_CFLAGS += -Wall -fno-strict-aliasing -Wno-undef -Wno-unused -Wno-missing-braces -Wno-missing-attributes -Wno-overflow -Wno-missing-prototypes -Wno-missing-declarations -Werror -DZX_PCIE_BUS -DNEW_ZXFB -D__LINUX__
++ccflags-y += -Wall -fno-strict-aliasing -Wno-undef -Wno-unused -Wno-missing-braces -Wno-missing-attributes -Wno-overflow -Wno-missing-prototypes -Wno-missing-declarations -Werror -DZX_PCIE_BUS -DNEW_ZXFB -D__LINUX__
+ ifeq ($(DEBUG), 1)
+-	EXTRA_CFLAGS += -ggdb3 -O2 -D_DEBUG_ -DZX_TRACE_EVENT=0
++	ccflags-y += -ggdb3 -O2 -D_DEBUG_ -DZX_TRACE_EVENT=0
+ else
+-	EXTRA_CFLAGS += -O2 -fno-strict-aliasing -DZX_TRACE_EVENT=1
++	ccflags-y += -O2 -fno-strict-aliasing -DZX_TRACE_EVENT=1
+ endif
+ 
+ BIN_TYPE ?= $(shell uname -m |sed -e s/i.86/i386/)
+@@ -25,11 +25,13 @@
+ DRM_PATCH=$(shell sed -n 's/^RHEL_DRM_PATCHLEVEL = \(.*\)/\1/p' $(LINUXDIR)/Makefile)
+ DRM_SUBLEVEL=$(shell sed -n 's/^RHEL_DRM_SUBLEVEL = \(.*\)/\1/p' $(LINUXDIR)/Makefile)
+ DRM_CODE=$(shell expr $(DRM_VER) \* 65536 + 0$(DRM_PATCH) \* 256 + 0$(DRM_SUBLEVEL))
+-EXTRA_CFLAGS += -DDRM_VERSION_CODE=$(DRM_CODE)
++ccflags-y += -DDRM_VERSION_CODE=$(DRM_CODE)
++else
++ccflags-y += -DDRM_VERSION_CODE=LINUX_VERSION_CODE
+ endif
+ 
+ ifeq ($(YHQILINOS), YHKYLIN-OS)
+-EXTRA_CFLAGS += -DYHQILIN
++ccflags-y += -DYHQILIN
+ KERNEL_VERSION_NUM := $(shell echo $(KERNEL_VERSION) | cut -d - -f1)
+ ifeq (,$(DRM_VER))
+ ifeq ($(KERNEL_VERSION_NUM), 4.4.131)
+@@ -37,7 +39,7 @@
+ DRM_PATCH=9
+ DRM_SUBLEVEL=0
+ DRM_CODE=$(shell expr $(DRM_VER) \* 65536 + 0$(DRM_PATCH) \* 256 + 0$(DRM_SUBLEVEL))
+-EXTRA_CFLAGS += -DDRM_VERSION_CODE=$(DRM_CODE)
++ccflags-y += -DDRM_VERSION_CODE=$(DRM_CODE)
+ endif
+ endif
+ endif
+@@ -95,16 +97,16 @@
+ zx-objs := $(addprefix $(ZX_SRC_DIR_O)/,$(ZX_OBJ_LIST))
+ 
+ ## for cbios
+-EXTRA_CFLAGS += -I${ZXGPU_FULL_PATH}/src/cbios \
+-             -I${ZXGPU_FULL_PATH}/src/cbios/Callback \
+-             -I${ZXGPU_FULL_PATH}/src/cbios/Device \
+-             -I${ZXGPU_FULL_PATH}/src/cbios/Device/Port \
+-             -I${ZXGPU_FULL_PATH}/src/cbios/Device/Monitor \
+-             -I${ZXGPU_FULL_PATH}/src/cbios/Device/Monitor/DSIPanel \
+-             -I$(ZXGPU_FULL_PATH)/src/cbios/Device/Monitor/EDPPanel \
+-             -I${ZXGPU_FULL_PATH}/src/cbios/Display \
+-             -I${ZXGPU_FULL_PATH}/src/cbios/Init \
+-             -I${ZXGPU_FULL_PATH}/src/cbios/Util 
++ccflags-y += -I$(PWD)/src/cbios \
++             -I$(PWD)/src/cbios/Callback \
++             -I$(PWD)/src/cbios/Device \
++             -I$(PWD)/src/cbios/Device/Port \
++             -I$(PWD)/src/cbios/Device/Monitor \
++             -I$(PWD)/src/cbios/Device/Monitor/DSIPanel \
++             -I$(PWD)/src/cbios/Device/Monitor/EDPPanel \
++             -I$(PWD)/src/cbios/Display \
++             -I$(PWD)/src/cbios/Init \
++             -I$(PWD)/src/cbios/Util 
+ 
+ ZX_CBIOS_OBJ_LIST := \
+         cbios/Interface/CBios.o \
+@@ -181,12 +183,12 @@
+ 	obj-m := zx.o zx_core.o
+ endif
+ 
+-KBUILD_CFLAGS += -I$(ZXGPU_FULL_PATH)/src
++KBUILD_CFLAGS += -I$(PWD)/src
+ 
+ modules:
+ 	make -C $(LINUXDIR) M=`pwd` modules
+ 
+-ZX_OBJ_DIR := $(ZXGPU_FULL_PATH)/objs/$(TARGET_ARCH)
++ZX_OBJ_DIR := $(PWD)/objs/$(TARGET_ARCH)
+ 
+ $(obj)/$(ZX_CORE_BINARY_OBJECT_O): $(ZX_OBJ_DIR)/$(ZX_CORE_BINARY_OBJECT) FORCE
+ 	$(call if_changed,symlink)
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/cbios/Device/CBiosDevice.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/cbios/Device/CBiosDevice.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/cbios/Device/CBiosDevice.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/cbios/Device/CBiosDevice.c	2026-09-28 22:06:42.535087852 +0800
+@@ -914,10 +914,13 @@
+     DPModuleIndex = cbGetModuleIndex(pcbe, pBacklight_para->DeviceId, CBIOS_MODULE_TYPE_DP);
+     if (DPModuleIndex == CBIOS_MODULE_INDEX_INVALID)
+     {
+-        cbDebugPrint((MAKE_LEVEL(GENERIC, ERROR), "%s: invalid DP module index!\n", FUNCTION_NAME));
+-        return CBIOS_ER_INVALID_PARAMETER;
++        /* ZXDBG: some eDP panels are not wired with a DP module in their path;
++         * fall back to module 1 so the generic PWM backlight write still runs. */
++        DPModuleIndex = CBIOS_MODULE_INDEX1;
+     }
+ 
++    cbDebugPrint((MAKE_LEVEL(DP, INFO), "ZXDBG setbl: dev=0x%x mod=%d gpiobl=%d\n", pBacklight_para->DeviceId, DPModuleIndex, pDpContext->DPMonitorContext.GpioForEDP1BackLight));
++
+     if(pDpContext)
+     {
+         Status =  cbEDPPanel_SetBacklight(pcbe, DPModuleIndex, pBacklight_para->BacklightValue, pEDPPanelDesc);
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/cbios/Device/Monitor/CBiosDPMonitor.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/cbios/Device/Monitor/CBiosDPMonitor.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/cbios/Device/Monitor/CBiosDPMonitor.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/cbios/Device/Monitor/CBiosDPMonitor.c	2026-09-28 21:05:49.792380836 +0800
+@@ -1564,6 +1564,7 @@
+         if (cbDPMonitor_LinkTraining(pcbe, pDPMonitorContext, CBIOS_FALSE))
+         {
+             CBIOS_BOOL status;
++            cbDebugPrint((MAKE_LEVEL(DP, INFO), "DBG LINK-TRAIN OK link=%d lane=%d bpc=%d\n", pDPMonitorContext->LinkSpeedToUse, pDPMonitorContext->LaneNumberToUse, pDPMonitorContext->bpc));
+             status = cbDPMonitor_SetUpMainLink(pcbe, pDPMonitorContext);
+             if(!status)
+             {
+@@ -1572,8 +1573,7 @@
+         }
+         else
+         {
+-            // Even if link training failed, still need to set correct DP path since sink would try to request link training again via hot IRQ.
+-            cbDebugPrint((MAKE_LEVEL(DP, WARNING),"%s: skip setting up Main Link because Link Training failed!\n", FUNCTION_NAME));
++            cbDebugPrint((MAKE_LEVEL(DP, WARNING),"%s: DBG LINK-TRAIN FAILED!\n", FUNCTION_NAME));
+         }
+ 
+         cbDelayMilliSeconds(2);
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/cbios/Device/Monitor/CBiosEDPPanel.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/cbios/Device/Monitor/CBiosEDPPanel.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/cbios/Device/Monitor/CBiosEDPPanel.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/cbios/Device/Monitor/CBiosEDPPanel.c	2026-09-28 22:21:36.394031787 +0800
+@@ -26,6 +26,27 @@
+ extern CBIOS_EDP_PANEL_DESC ITN156_Panel_Desc;
+ extern CBIOS_EDP_PANEL_DESC EDO156_Panel_Desc;
+ extern CBIOS_EDP_PANEL_DESC DHUDH_Panel_Desc;
++extern CBIOS_STATUS INT156_SetBacklight(PCBIOS_VOID pvcbe, CBIOS_MODULE_INDEX DPModuleIndex, CBIOS_U32 BacklightValue);
++
++static CBIOS_STATUS zx_default_edp_setbl(PCBIOS_VOID pvcbe, CBIOS_MODULE_INDEX DPModuleIndex, CBIOS_U32 BacklightValue)
++{
++    PCBIOS_EXTENSION_COMMON pcbe = (PCBIOS_EXTENSION_COMMON)pvcbe;
++    REG_SR35_Pair RegSR35Value, RegSR35Mask;
++
++    /* ZXDBG: default eDP panel has GpioForEDP1BackLight=1 -> backlight rail is
++     * SR_B_35 GPIO0. The full DP-ON path is skipped by the DRM driver, so force
++     * the rail on here, then program PWM via INT156. */
++    RegSR35Value.Value = 0;
++    RegSR35Value.GPIO0_Select = 0x1;
++    RegSR35Value.GPIO0_Data = 1;
++    RegSR35Mask.Value = 0xFF;
++    RegSR35Mask.GPIO0_Select = 0;
++    RegSR35Mask.GPIO0_Data = 0;
++    cbMMIOWriteReg(pcbe, SR_B_35, RegSR35Value.Value, RegSR35Mask.Value);
++    cbDebugPrint((MAKE_LEVEL(DP, INFO), "ZXDBG default-edp: VEE/SR_B_35 forced on\n"));
++
++    return INT156_SetBacklight(pvcbe, DPModuleIndex, BacklightValue);
++}
+ 
+ 
+ #define DEFAULT_EDP_PANEL_INDEX 0
+@@ -58,7 +79,7 @@
+     /*.pFnEDPPanelInit = */CBIOS_NULL,
+     /*.pFnEDPPanelDeInit = */CBIOS_NULL,
+     /*.pFnEDPPanelOnOff = */CBIOS_NULL,
+-    /*.pFnEDPPanelSetBacklight = */CBIOS_NULL,
++    /*.pFnEDPPanelSetBacklight = */zx_default_edp_setbl,
+     /*.pFnEDPPanelGetBacklight = */CBIOS_NULL,
+ };
+ 
+@@ -204,6 +225,10 @@
+ 
+     if (pPanelDesc != CBIOS_NULL)
+     {
++        cbDebugPrint((MAKE_LEVEL(DP, INFO), "DBG eDP-OnOff bTurnOn=%d MonitorID='%s' isBL=%d isHardcode=%d Link=%d Lane=%d\n", bTurnOn,
++                pPanelDesc->MonitorID[0] ? (char *)pPanelDesc->MonitorID : "(null)",
++                pPanelDesc->EDPCaps.isBLCtrlSupport, pPanelDesc->EDPCaps.isHardcodeLinkPara,
++                pPanelDesc->EDPCaps.LinkSpeed, pPanelDesc->EDPCaps.LaneNum));
+         if (pPanelDesc->pFnEDPPanelOnOff != CBIOS_NULL)
+         {
+             Status = pPanelDesc->pFnEDPPanelOnOff(pvcbe, DPModuleIndex, bTurnOn);
+@@ -292,6 +317,11 @@
+     
+                 cbMMIOWriteReg32(pcbe, 0x333DC, RegMM333DC_Value.Value, RegMM333DC_Mask.Value);            
+             }
++            cbDebugPrint((MAKE_LEVEL(DP, INFO), "ZXDBG pwm333D8=%x 333DC=%x 346C=%x 3470=%x\n",
++                cb_ReadU32(pcbe->pAdapterContext, 0x333D8),
++                cb_ReadU32(pcbe->pAdapterContext, 0x333DC),
++                cb_ReadU32(pcbe->pAdapterContext, 0x346C),
++                cb_ReadU32(pcbe->pAdapterContext, 0x3470)));
+         }
+     }
+     else
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/os_interface.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/os_interface.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/os_interface.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/os_interface.c	2026-09-27 22:42:01.400445201 +0800
+@@ -21,6 +21,7 @@
+ #include "os_interface.h"
+ #include "zx.h"
+ #include "zx_driver.h"
++#include <linux/string.h>
+ 
+ extern int zx_hang_dump;
+ 
+@@ -198,7 +199,14 @@
+ 
+ char* zx_strncpy(char *d, const char *s, unsigned long count)
+ {
+-    return strncpy(d, s, count);
++    unsigned long i;
++
++    for (i = 0; i < count && s[i] != '\0'; i++)
++        d[i] = s[i];
++    for (; i < count; i++)
++        d[i] = '\0';
++
++    return d;
+ }
+ 
+ char* zx_strstr(const char* s1, const char* s2)
+@@ -2167,7 +2175,7 @@
+ 
+ void *zx_pages_memory_swapout(struct os_pages_memory *pages_memory)
+ {
+-    struct file          *file_storage = shmem_file_setup("zx gmem", pages_memory->size, 0);
++    struct file          *file_storage = shmem_file_setup("zx gmem", pages_memory->size, (vma_flags_t){ 0 });
+     struct address_space *file_addr_space;
+     struct page          **pages;
+     struct page          *src_page, *dst_page;
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_atomic.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_atomic.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_atomic.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_atomic.c	2026-09-27 23:10:30.316782641 +0800
+@@ -3,31 +3,7 @@
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
+ 
+-struct drm_atomic_state* zx_atomic_state_alloc(struct drm_device *dev)
+-{
+-	zx_ato_state_t *state = zx_calloc(sizeof(zx_ato_state_t));
+-
+-	if (!state || drm_atomic_state_init(dev, &state->base_ato_state) < 0)
+-    {
+-		zx_free(state);
+-		return NULL;
+-	}
+ 
+-	return &state->base_ato_state;
+-}
+-
+-void zx_atomic_state_clear(struct drm_atomic_state *s)
+-{
+-	zx_ato_state_t *state = to_zx_atomic_state(s);
+-	drm_atomic_state_default_clear(s);
+-}
+-
+-void zx_atomic_state_free(struct drm_atomic_state *s)
+-{
+-    zx_ato_state_t *state = to_zx_atomic_state(s);
+-    drm_atomic_state_default_release(s);
+-    zx_free(state);
+-}
+ 
+ struct drm_crtc_state* zx_crtc_duplicate_state(struct drm_crtc *crtc)
+ {
+@@ -126,7 +102,7 @@
+ 
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+-int zx_crtc_helper_check(struct drm_crtc *crtc, struct drm_atomic_state *state)
++int zx_crtc_helper_check(struct drm_crtc *crtc, struct drm_atomic_commit *state)
+ #else
+ int zx_crtc_helper_check(struct drm_crtc *crtc, struct drm_crtc_state *state)
+ #endif
+@@ -156,7 +132,7 @@
+     zx_free(zx_conn_state);
+ }
+ 
+-static void zx_update_crtc_sink(struct drm_atomic_state *old_state)
++static void zx_update_crtc_sink(struct drm_atomic_commit *old_state)
+ {
+     struct drm_crtc *crtc;
+     struct drm_crtc_state *old_crtc_state, *new_crtc_state;
+@@ -227,7 +203,7 @@
+     }
+ }
+ 
+-void zx_atomic_helper_commit_tail(struct drm_atomic_state *old_state)
++void zx_atomic_helper_commit_tail(struct drm_atomic_commit *old_state)
+ {
+     struct drm_device *dev = old_state->dev;
+     zx_card_t*  zx_card = dev->dev_private;
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_atomic.h /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_atomic.h
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_atomic.h	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_atomic.h	2026-09-27 23:10:30.317793219 +0800
+@@ -6,11 +6,7 @@
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
+ 
+-struct drm_atomic_state* zx_atomic_state_alloc(struct drm_device *dev);
+ 
+-void zx_atomic_state_clear(struct drm_atomic_state *s);
+-
+-void zx_atomic_state_free(struct drm_atomic_state *s);
+ 
+ struct drm_crtc_state* zx_crtc_duplicate_state(struct drm_crtc *crtc);
+ 
+@@ -27,7 +23,7 @@
+ 
+ void zx_crtc_destroy_state(struct drm_crtc *crtc, struct drm_crtc_state *s);
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+-    int zx_crtc_helper_check(struct drm_crtc *crtc, struct drm_atomic_state *state);
++    int zx_crtc_helper_check(struct drm_crtc *crtc, struct drm_atomic_commit *state);
+ #else
+     int zx_crtc_helper_check(struct drm_crtc *crtc, struct drm_crtc_state *state);
+ #endif
+@@ -35,7 +31,7 @@
+ 
+ void zx_connector_destroy_state(struct drm_connector *connector, struct drm_connector_state *state);
+ 
+-void zx_atomic_helper_commit_tail(struct drm_atomic_state *old_state);
++void zx_atomic_helper_commit_tail(struct drm_atomic_commit *old_state);
+ 
+ #endif
+ 
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_cbios.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_cbios.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_cbios.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_cbios.c	2026-09-28 22:41:47.253367182 +0800
+@@ -92,6 +92,22 @@
+     zx_write32(adapter->mmio + port, value);
+ }
+ 
++unsigned int disp_read_register_u32(void *data, unsigned int RegType, unsigned int RegIndex)
++{
++    disp_info_t *disp_info = data;
++    adapter_info_t *adapter = disp_info->adp_info;
++
++    return zx_read32(adapter->mmio + RegIndex);
++}
++
++void disp_write_register_u32(void *data, unsigned int RegType, unsigned int RegIndex, unsigned int Value)
++{
++    disp_info_t *disp_info = data;
++    adapter_info_t *adapter = disp_info->adp_info;
++
++    zx_write32(adapter->mmio + RegIndex, Value);
++}
++
+ void* disp_alloc_memory(unsigned int size)
+ {
+     return zx_calloc(size);
+@@ -554,6 +570,8 @@
+     fnCallBack.pFnDodiv             = zx_do_div;
+     fnCallBack.pFnVsprintf          = zx_vsprintf;
+     fnCallBack.pFnVsnprintf         = zx_vsnprintf;
++    fnCallBack.pFnWriteRegisterU32  = disp_write_register_u32;
++    fnCallBack.pFnReadRegisterU32   = disp_read_register_u32;
+ 
+     if(CBiosSetCallBackFunctions(&fnCallBack) != CBIOS_OK)
+     {
+@@ -1948,6 +1966,12 @@
+         case DRM_FORMAT_ARGB2101010:
+             cbios_format = CBIOS_FMT_A2R10G10B10;
+             break;
++        case DRM_FORMAT_XRGB2101010:
++            cbios_format = CBIOS_FMT_A2R10G10B10;
++            break;
++        case DRM_FORMAT_XBGR2101010:
++            cbios_format = CBIOS_FMT_A2B10G10R10;
++            break;
+         case DRM_FORMAT_YUYV:
+         case DRM_FORMAT_YVYU:
+             cbios_format = CBIOS_FMT_CRYCBY422_16BIT;
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_cbios.h /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_cbios.h
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_cbios.h	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_cbios.h	2026-09-27 22:42:01.398685469 +0800
+@@ -19,7 +19,7 @@
+  * ** rights reserved under the Copyright Laws of the United States.
+  * */
+ 
+-#include "CBios.h"
++#include "cbios/CBios.h"
+ 
+ enum
+ {
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_connector.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_connector.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_connector.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_connector.c	2026-09-27 22:59:03.476149932 +0800
+@@ -303,7 +303,7 @@
+ }
+ 
+ enum drm_mode_status 
+-zx_connector_mode_valid(struct drm_connector *connector, struct drm_display_mode *mode)
++zx_connector_mode_valid(struct drm_connector *connector, const struct drm_display_mode *mode)
+ {
+     struct drm_device *dev = connector->dev;
+     zx_card_t *zx_card = dev->dev_private;
+@@ -569,7 +569,7 @@
+ {
+     int ret = 0;
+     struct drm_device *dev = connector->dev;
+-    struct drm_atomic_state *state = drm_atomic_state_alloc(dev);
++    struct drm_atomic_commit *state = drm_atomic_commit_alloc(dev);
+     struct drm_crtc *crtc = connector->encoder->crtc;
+     struct drm_plane *plane = crtc->primary;
+     struct drm_connector_state *conn_state;
+@@ -610,9 +610,9 @@
+ 
+ out:
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
+-    drm_atomic_state_put(state);
++    drm_atomic_commit_put(state);
+ #else
+-    drm_atomic_state_free(state);
++    drm_atomic_commit_free(state);
+ #endif
+ 
+     if (ret)
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_crtc.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_crtc.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_crtc.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_crtc.c	2026-09-27 22:59:03.472693378 +0800
+@@ -126,7 +126,7 @@
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 14, 0)
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+-void  zx_crtc_atomic_enable(struct drm_crtc *crtc, struct drm_atomic_state *state)
++void  zx_crtc_atomic_enable(struct drm_crtc *crtc, struct drm_atomic_commit *state)
+ #else
+ void  zx_crtc_atomic_enable(struct drm_crtc *crtc, struct drm_crtc_state *old_crtc_state)
+ #endif
+@@ -141,7 +141,7 @@
+ #endif
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+-void  zx_crtc_atomic_disable(struct drm_crtc *crtc, struct drm_atomic_state *state)
++void  zx_crtc_atomic_disable(struct drm_crtc *crtc, struct drm_atomic_commit *state)
+ #else
+ void  zx_crtc_atomic_disable(struct drm_crtc *crtc, struct drm_crtc_state *old_crtc_state)
+ #endif
+@@ -168,7 +168,7 @@
+     drm_crtc_vblank_off(crtc);
+ }
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+-void zx_crtc_atomic_begin(struct drm_crtc *crtc, struct drm_atomic_state *state)
++void zx_crtc_atomic_begin(struct drm_crtc *crtc, struct drm_atomic_commit *state)
+ #else
+ void zx_crtc_atomic_begin(struct drm_crtc *crtc, struct drm_crtc_state *old_crtc_state)
+ #endif
+@@ -259,7 +259,7 @@
+ }
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+-void zx_crtc_atomic_flush(struct drm_crtc *crtc, struct drm_atomic_state *state)
++void zx_crtc_atomic_flush(struct drm_crtc *crtc, struct drm_atomic_commit *state)
+ #else
+ void zx_crtc_atomic_flush(struct drm_crtc *crtc, struct drm_crtc_state *old_crtc_state)
+ #endif
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_crtc.h /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_crtc.h
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_crtc.h	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_crtc.h	2026-09-27 22:59:03.473411482 +0800
+@@ -15,13 +15,13 @@
+ 
+ void  zx_crtc_helper_disable(struct drm_crtc *crtc);
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
+-void  zx_crtc_atomic_disable(struct drm_crtc *crtc, struct drm_atomic_state *state);
++void  zx_crtc_atomic_disable(struct drm_crtc *crtc, struct drm_atomic_commit *state);
+ 
+-void  zx_crtc_atomic_enable(struct drm_crtc *crtc, struct drm_atomic_state *state);
++void  zx_crtc_atomic_enable(struct drm_crtc *crtc, struct drm_atomic_commit *state);
+ 
+-void zx_crtc_atomic_begin(struct drm_crtc *crtc, struct drm_atomic_state *state);
++void zx_crtc_atomic_begin(struct drm_crtc *crtc, struct drm_atomic_commit *state);
+ 
+-void zx_crtc_atomic_flush(struct drm_crtc *crtc, struct drm_atomic_state *state);
++void zx_crtc_atomic_flush(struct drm_crtc *crtc, struct drm_atomic_commit *state);
+ #else
+ void  zx_crtc_atomic_disable(struct drm_crtc *crtc, struct drm_crtc_state *old_crtc_state);
+ 
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_disp.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_disp.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_disp.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_disp.c	2026-09-27 23:10:30.318336464 +0800
+@@ -21,9 +21,6 @@
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
+     .atomic_check = drm_atomic_helper_check,
+     .atomic_commit = drm_atomic_helper_commit,
+-    .atomic_state_alloc = zx_atomic_state_alloc,
+-    .atomic_state_clear = zx_atomic_state_clear,
+-    .atomic_state_free   = zx_atomic_state_free,
+ #endif
+ };
+ 
+@@ -1015,7 +1012,7 @@
+     disp_info_t *disp_info = (disp_info_t *)zx->disp_info;
+     int ret = 0;
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
+-    struct drm_atomic_state *state;
++    struct drm_atomic_commit *state;
+ #endif
+ 
+     zx_poll_disable(disp_info);
+@@ -1079,7 +1076,7 @@
+     zx_card_t  *zx = dev->dev_private;
+     disp_info_t *disp_info = (disp_info_t *)zx->disp_info;
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
+-    struct drm_atomic_state *state = disp_info->modeset_restore_state;
++    struct drm_atomic_commit *state = disp_info->modeset_restore_state;
+     struct drm_crtc_state *crtc_state;
+     struct drm_plane_state *plane_state;
+     struct drm_modeset_acquire_ctx ctx;
+@@ -1154,12 +1151,12 @@
+     if (ret){
+         DRM_ERROR("Restoring old state failed with %i\n", ret);
+ #if DRM_VERSION_CODE < KERNEL_VERSION(4, 10, 0)
+-        drm_atomic_state_free(state);
++        drm_atomic_commit_free(state);
+ #endif
+     }
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
+     if (state)
+-        drm_atomic_state_put(state);
++        drm_atomic_commit_put(state);
+ #endif
+ #endif
+ 
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_drmfb.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_drmfb.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_drmfb.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_drmfb.c	2026-09-27 23:14:57.682119456 +0800
+@@ -54,6 +54,7 @@
+ 
+ struct drm_zx_framebuffer*
+ __zx_framebuffer_create(struct drm_device *dev,
++                        const struct drm_format_info *info,
+                         struct drm_mode_fb_cmd2 *mode_cmd,
+                         struct drm_zx_gem_object *obj)
+ {
+@@ -66,7 +67,7 @@
+ #if DRM_VERSION_CODE < KERNEL_VERSION(4, 11, 0)
+     drm_helper_mode_fill_fb_struct(&zxfb->base, mode_cmd);
+ #else
+-    drm_helper_mode_fill_fb_struct(dev, &zxfb->base, mode_cmd);
++    drm_helper_mode_fill_fb_struct(dev, &zxfb->base, info, mode_cmd);
+ #endif
+     zxfb->obj = obj;
+ 
+@@ -83,7 +84,8 @@
+ struct drm_framebuffer *
+ zx_fb_create(struct drm_device *dev,
+               struct drm_file *file,
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 5, 0)
++              const struct drm_format_info *info,
++              #if DRM_VERSION_CODE < KERNEL_VERSION(4, 5, 0)
+               struct drm_mode_fb_cmd2 *user_mode_cmd
+ #else
+               const struct drm_mode_fb_cmd2 *user_mode_cmd
+@@ -107,7 +109,7 @@
+         return ERR_PTR(-EINVAL);
+     }
+ 
+-    fb = __zx_framebuffer_create(dev, mode_cmd, obj);
++    fb = __zx_framebuffer_create(dev, info, mode_cmd, obj);
+     if (IS_ERR(fb))
+         zx_gem_object_put(obj);
+ 
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_drmfb.h /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_drmfb.h
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_drmfb.h	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_drmfb.h	2026-09-27 23:14:57.680337654 +0800
+@@ -14,6 +14,7 @@
+ struct drm_framebuffer *
+ zx_fb_create(struct drm_device *dev,
+                               struct drm_file *file_priv,
++                              const struct drm_format_info *info,
+                               #if DRM_VERSION_CODE >= KERNEL_VERSION(4, 5, 0)
+                               const struct drm_mode_fb_cmd2 *mode_cmd
+                               #else
+@@ -25,6 +26,7 @@
+ 
+ struct drm_zx_framebuffer*
+ __zx_framebuffer_create(struct drm_device *dev,
++                        const struct drm_format_info *info,
+                         struct drm_mode_fb_cmd2 *mode_cmd,
+                         struct drm_zx_gem_object *obj);
+ #endif
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_encoder.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_encoder.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_encoder.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_encoder.c	2026-09-28 22:29:29.916744390 +0800
+@@ -73,11 +73,24 @@
+     {
+         zx_info("To turn on power of device: 0x%x.\n", zx_encoder->output_type);
+ 
+-        zx_mutex_lock(zx_connector->conn_mutex);
++        /* FEDORA44: re-enable DP ON (register callbacks now wired) */
++        zx_info("ZXDBG trying disp_cbios_set_dpms(ON)\n");
+         disp_cbios_set_dpms(disp_info, zx_encoder->output_type, ZX_DPMS_ON, 0);
+-        zx_mutex_unlock(zx_connector->conn_mutex);
++        zx_info("ZXDBG disp_cbios_set_dpms(ON) returned\n");
+         zx_encoder->enc_dpms = ZX_DPMS_ON;
+ 
++        /* ZXDBG: force eDP backlight on (default panel has no OnOff; PWM via 0x333D8/0x333DC) */
++        if (zx_encoder->output_type == DISP_OUTPUT_DP5)
++        {
++            CBIOS_BACKLIGHT_PARA blPara = {0};
++            CBIOS_STATUS blst;
++            blPara.Size = sizeof(CBIOS_BACKLIGHT_PARA);
++            blPara.BacklightValue = 255;
++            blPara.DeviceId = zx_encoder->output_type;
++            blst = CBiosSetBacklight(disp_info->cbios_ext, &blPara);
++            zx_info("ZXDBG bl hook: output=0x%x blst=0x%x\n", zx_encoder->output_type, blst);
++        }
++
+         zx_audio_set_connect(zx_connector, 1);
+     }
+ }
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_fbdev.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_fbdev.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_fbdev.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_fbdev.c	2026-09-28 21:03:06.834359957 +0800
+@@ -1,457 +1,45 @@
++#include <drm/drm_fb_helper.h>
++#include <drm/clients/drm_client_setup.h>
+ #include "zx_disp.h"
+ #include "zx_cbios.h"
+ #include "zx_fbdev.h"
+ #include "zx_gem.h"
+ #include "zx_debugfs.h"
+-#include <drm/drm_fb_helper.h>
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 11, 0)
+-#include <linux/async.h>
+-#endif
+-
+-static int zxfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+-{
+-    struct drm_fb_helper *helper = info->par;
+-    struct drm_device *dev = helper->dev;
+-    struct zx_fbdev *fbdev = to_zx_fbdev(helper);
+-    struct drm_zx_framebuffer *fb = fbdev->fb;
+-    struct drm_zx_gem_object *obj = fb->obj;
+-    int ret = 0;
+-
+-    if(obj->core_handle)
+-    {
+-        ret = drm_gem_mmap_obj(&obj->base, obj->base.size, vma);
+-        if(ret)
+-            return ret;
+-    }
+-
+-    obj->delay_map = 1;
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(6,3,0)
+-    vma->vm_flags &= ~(VM_IO | VM_PFNMAP | VM_DONTEXPAND | VM_DONTDUMP);
+-#else
+-    vm_flags_clear(vma, (VM_IO | VM_PFNMAP | VM_DONTEXPAND | VM_DONTDUMP));
+-#endif
+-    vma->vm_page_prot = pgprot_writecombine(vm_get_page_prot(vma->vm_flags));
+-
+-    zx_drm_gem_object_vm_prepare(obj);
+-
+-    return zx_drm_gem_object_mmap(dev->dev_private, obj, vma);
+-}
+-
+-static int zx_drm_fb_set_par(struct fb_info *info)
+-{
+-    struct drm_fb_helper *helper = info->par;
+-    struct drm_device *dev = helper->dev;
+-    struct zx_fbdev *fbdev = to_zx_fbdev(helper);
+-    zx_card_t* zx = (zx_card_t*)dev->dev_private;
+-    
+-    zx_info("To set par on drm fb.\n");
+-    
+-    return drm_fb_helper_set_par(info);
+-}
+-
+-#if DRM_VERSION_CODE >= KERNEL_VERSION(6, 6, 0)
+-FB_GEN_DEFAULT_DEFERRED_IOMEM_OPS(zx, drm_fb_helper_damage_range, drm_fb_helper_damage_area)
+-#elif DRM_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+-FB_GEN_DEFAULT_DEFERRED_IO_OPS(zx, drm_fb_helper_damage_range, drm_fb_helper_damage_area)
+-#endif
+-
+-static struct fb_ops zxfb_ops = {
+-    .owner = THIS_MODULE,
+-#if DRM_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
+-#if DRM_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
+-    DRM_FB_HELPER_DEFAULT_OPS,
+-#endif
+-
+-    .fb_set_par = zx_drm_fb_set_par,
+-#if DRM_VERSION_CODE >= KERNEL_VERSION(6, 5, 0)
+-    __FB_DEFAULT_DEFERRED_OPS_DRAW(zx),
+-#else
+-    .fb_fillrect = drm_fb_helper_cfb_fillrect,
+-    .fb_copyarea = drm_fb_helper_cfb_copyarea,
+-    .fb_imageblit = drm_fb_helper_cfb_imageblit,
+-#endif
+-#else
+-    .fb_check_var = drm_fb_helper_check_var,
+-    .fb_set_par = drm_fb_helper_set_par,
+-    .fb_pan_display = drm_fb_helper_pan_display,
+-    .fb_blank = drm_fb_helper_blank,
+-    .fb_debug_enter = drm_fb_helper_debug_enter,
+-    .fb_debug_leave = drm_fb_helper_debug_leave,
+-    .fb_setcmap = drm_fb_helper_setcmap,
+-
+-    .fb_fillrect = cfb_fillrect,
+-    .fb_copyarea = cfb_copyarea,
+-    .fb_imageblit = cfb_imageblit,
+-#endif
+-    .fb_mmap    = zxfb_mmap,
+-};
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
+-static bool zx_fb_initial_config(struct drm_fb_helper *fb_helper,
+-        struct drm_fb_helper_crtc **crtcs,
+-        struct drm_display_mode **modes,
+-        struct drm_fb_offset *offsets,
+-        bool *enabled, int width, int height)
+-{
+-    struct drm_device *dev = fb_helper->dev;
+-    zx_card_t *zx = dev->dev_private;
+-
+-
+-    return false;
+-}
+-#endif
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+-static void zx_crtc_fb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green, u16 blue, int reqno)
+-{
+-    DRM_DEBUG_KMS("crtc=%d,red=%d,green=%d,blue=%d\n", to_zx_crtc(crtc)->pipe, red, green, blue);
+-}
+-
+-static void zx_crtc_fb_gamma_get(struct drm_crtc *crtc, u16 *red, u16 *green, u16 *blue, int reqno)
+-{
+-    DRM_DEBUG_KMS("crtc=%d\n", to_zx_crtc(crtc)->pipe);
+-}
+-#endif
+-
+-static int zxfb_create(struct drm_fb_helper *helper, struct drm_fb_helper_surface_size *sizes)
+-{
+-    int ret = 0;
+-    struct fb_info *info;
+-    struct zx_fbdev *fbdev = to_zx_fbdev(helper);
+-    struct drm_zx_framebuffer *fb = fbdev->fb;
+-    struct drm_device *dev = helper->dev;
+-    zx_card_t *zx = dev->dev_private;
+-    disp_info_t *disp_info = (disp_info_t *)zx->disp_info;
+-    struct drm_zx_gem_object *obj = NULL;
+-    int linear_status;
+-
+-    DRM_DEBUG_KMS("fb_width=%d,fb_height=%d,surface_width=%d,surface_height=%d,surface_bpp=%d,surface_depth=%d\n",
+-            sizes->fb_width, sizes->fb_height, sizes->surface_width, sizes->surface_height, sizes->surface_bpp, sizes->surface_depth);
+-
+-    mutex_lock(&dev->struct_mutex);
+-
+-    if (fb && (sizes->fb_width > fb->base.width || sizes->fb_height > fb->base.height))
+-    {
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
+-        drm_framebuffer_unreference(&fb->base);
+-#else
+-        drm_framebuffer_put(&fb->base);
+-#endif
+-        fbdev->fb = NULL;
+-        fb = NULL;
+-    }
+-
+-    if (!fb)
+-    {
+-        zx_create_allocation_t *create = zx_calloc(sizeof(zx_create_allocation_t));
+-        struct drm_mode_fb_cmd2 *mode_cmd = zx_calloc(sizeof(struct drm_mode_fb_cmd2));
+-
+-        linear_status = disp_enable_disable_linear_vga(disp_info, 1, 0);
+-        create->device   = fbdev->gpu_device;
+-        create->width    = sizes->surface_width;
+-        create->height   = sizes->surface_height;
+-        create->format   = (sizes->surface_bpp == 32) ? ZX_FORMAT_B8G8R8A8_UNORM : ZX_FORMAT_B5G6R5_UNORM;
+-        create->tiled    = 0;
+-        create->unpagable    = TRUE;
+-        create->usage_mask   = ZX_USAGE_DISPLAY_SURFACE | ZX_USAGE_FRAMEBUFFER;
+-        create->access_hint  = ZX_ACCESS_CPU_ALMOST;
+-
+-        obj = zx_drm_gem_create_object(zx, create, &fbdev->debug);
+-        zx_assert(obj != NULL && obj->core_handle != 0);
+-
+-        mode_cmd->width = sizes->surface_width;
+-        mode_cmd->height = sizes->surface_height;
+-        mode_cmd->pitches[0] = obj->info.pitch;
+-        mode_cmd->pixel_format = drm_mode_legacy_fb_format(sizes->surface_bpp, sizes->surface_depth);
+-        fb = __zx_framebuffer_create(dev, mode_cmd, obj);
+-        fbdev->fb = fb;
+-        disp_enable_disable_linear_vga(disp_info, linear_status, 1);
+-
+-        zx_free(mode_cmd);
+-        zx_free(create);
+-    }
+-    else
+-    {
+-        sizes->fb_width = fb->base.width;
+-        sizes->fb_height = fb->base.height;
+-    }
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+-    info = framebuffer_alloc(0, &dev->pdev->dev);
+-    zx_assert(info != NULL);
+-
+-    info->par = helper;
+-    info->flags = FBINFO_DEFAULT | FBINFO_CAN_FORCE_OUTPUT;
+-    info->fbops = &zxfb_ops;
+-
+-    ret = fb_alloc_cmap(&info->cmap, 256, 0);
+-    zx_assert(ret == 0);
+-
+-    info->apertures = alloc_apertures(1);
+-    zx_assert(info->apertures != NULL);
+-
+-    info->apertures->ranges[0].base = dev->mode_config.fb_base;
+-    info->apertures->ranges[0].size = obj ? obj->info.gpu_virt_addr + obj->info.pitch * obj->info.height : 0;
+-    helper->fbdev = info;
+-#else
+-#if DRM_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+-    info = drm_fb_helper_alloc_fbi(helper);
+-#else
+-    info = drm_fb_helper_alloc_info(helper);
+-#endif
+-    info->par = helper;
+-#if DRM_VERSION_CODE < KERNEL_VERSION(6, 6, 0)
+-    info->flags = FBINFO_DEFAULT;
+-#endif
+-    info->fbops = &zxfb_ops;
+-#endif
+ 
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 20, 0)
+-    info->flags |= FBINFO_CAN_FORCE_OUTPUT;
+-#endif
+-
+-    info->skip_vt_switch = true;
+-    fbdev->helper.fb = &fb->base;
+-    zx_vsprintf(info->fix.id, "%s", "zxfb");
+-
+-    if (obj)
+-    {
+-        info->fix.smem_start = obj->info.cpu_phy_addr;
+-        info->fix.smem_len = obj->info.pitch * obj->info.aligned_height;
+-
+-        //map fbdev fb  gem object
+-        info->screen_base = zx_gem_object_vmap(obj);
+-        info->screen_size = obj->info.pitch * obj->info.aligned_height;
+-    }
+-
+-    info->skip_vt_switch = true;
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 11, 0)
+-    drm_fb_helper_fill_fix(info, fb->base.pitches[0], fb->base.depth);
+-    drm_fb_helper_fill_var(info, &fbdev->helper, sizes->fb_width, sizes->fb_height);
+-#elif DRM_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
+-    drm_fb_helper_fill_fix(info, fb->base.pitches[0], fb->base.format->depth);
+-    drm_fb_helper_fill_var(info, &fbdev->helper, sizes->fb_width, sizes->fb_height);
+-#else
+-    drm_fb_helper_fill_info(info, &fbdev->helper, sizes);
+-#endif
+-
+-    DRM_DEBUG_KMS("screen_base=0x%p,screen_size=0x%lx,smem_start=0x%lx,smem_len=0x%x,xres=%d,yres=%d\n",
+-            info->screen_base, info->screen_size, info->fix.smem_start, info->fix.smem_len, info->var.xres, info->var.yres);
+-
+-    mutex_unlock(&dev->struct_mutex);
+-    return 0;
+-}
+-
+-#if DRM_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+-static int zxfb_dirty(struct drm_fb_helper *helper, struct drm_clip_rect *clip)
+-{
+-    if (!(clip->x1 < clip->x2 && clip->y1 < clip->y2))
+-        return 0;
+-
+-    if (helper->fb->funcs->dirty)
+-        return helper->fb->funcs->dirty(helper->fb, NULL, 0, 0, clip, 1);
+-
+-    return 0;
+-}
+-#endif
+-
+-static const struct drm_fb_helper_funcs zx_fb_helper_funcs = {
+-#if DRM_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
+-    .initial_config     = zx_fb_initial_config,
+-#endif
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+-    .gamma_set          = zx_crtc_fb_gamma_set,
+-    .gamma_get          = zx_crtc_fb_gamma_get,
+-#endif
+-    .fb_probe           = zxfb_create,
+-#if DRM_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+-    .fb_dirty           = zxfb_dirty,
+-#endif
+-};
++/*
++ * zx_fbdev.c -- fbdev 模拟(移植到 7.x)
++ *
++ * 7.x 内核已移除旧的 per-driver drm_fb_helper 接口
++ * (fb_probe 钩子 / dev->struct_mutex / drm_fb_helper_alloc_info 等),
++ * 改用内核通用 fbdev 模拟 drm_fbdev_generic_setup()。
++ * 因此这里不再自建 framebuffer, 交给内核通用路径,
++ * 它通过驱动自身的 fb_create 分配 framebuffer。
++ */
+ 
+ void zx_fbdev_disable_vesa(zx_card_t *zx)
+ {
+-#if DRM_VERSION_CODE < KERNEL_VERSION(5, 14, 0)
+-    struct apertures_struct *ap;
+-    bool primary = false;
+-    struct pci_dev *pdev = zx->pdev;
+-
+-    ap = alloc_apertures(1);
+-    if (!ap)
+-    {
+-        zx_error("alloc ap failed\n");
+-        return;
+-    }
+-
+-    ap->ranges[0].base = pci_resource_start(pdev, 1);
+-    ap->ranges[0].size = pci_resource_len(pdev, 1);
+-
+-#ifdef CONFIG_X86
+-    primary = pdev->resource[PCI_ROM_RESOURCE].flags & IORESOURCE_ROM_SHADOW;
+-#endif
+-
+-#if  DRM_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
+-    drm_fb_helper_remove_conflicting_framebuffers(ap, "zxdrmfb", primary);
+-#else
+-    remove_conflicting_framebuffers(ap, "zxdrmfb", primary);
+-#endif
+-
+-    zx_free(ap);
+-
+-#endif
++	/* 冲突的 VESA/EFI framebuffer 已由 probe 阶段的
++	 * drm_aperture_remove_conflicting_pci_framebuffers 处理 */
+ }
+ 
+ int zx_fbdev_init(zx_card_t *zx)
+ {
+-    int ret;
+-    struct zx_fbdev *fbdev;
+-
+-    DRM_DEBUG_KMS("zx=%p\n", zx);
+-
+-    fbdev = zx_calloc(sizeof(*fbdev));
+-    zx_assert(fbdev != NULL);
+-
+-    ret = zx_core_interface->create_device(zx->adapter, NULL, &fbdev->gpu_device);
+-    zx_assert(ret == 0);
+-
+-    fbdev->debug = zx_debugfs_add_device_node(zx->debugfs_dev, zx_get_current_pid(), fbdev->gpu_device);
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
+-    drm_fb_helper_prepare(zx->drm_dev, &fbdev->helper, &zx_fb_helper_funcs);
+-#else
+-    drm_fb_helper_prepare(zx->drm_dev, &fbdev->helper, 32, &zx_fb_helper_funcs);
+-#endif
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 11, 0)
+-    ret = drm_fb_helper_init(zx->drm_dev, &fbdev->helper, ((disp_info_t*)(zx->disp_info))->num_crtc, 4);
+-#elif DRM_VERSION_CODE < KERNEL_VERSION(5, 7, 0)
+-    ret = drm_fb_helper_init(zx->drm_dev, &fbdev->helper, 4);
+-#else
+-    ret = drm_fb_helper_init(zx->drm_dev, &fbdev->helper);
+-#endif    
+-    zx_assert(ret == 0);
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(5, 7, 0)
+-    drm_fb_helper_single_add_all_connectors(&fbdev->helper);
+-#endif
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
+-    drm_fb_helper_initial_config(&fbdev->helper, 32);
+-#else
+-    drm_fb_helper_initial_config(&fbdev->helper);
+-#endif
+-
+-    zx->fbdev = fbdev;
+-
+-    return 0;
++	/* drm_client_setup_with_color_mode(zx->drm_dev, 32); disabled: crashes gnome-shell */
++	return 0;
+ }
+ 
+-
+ int zx_fbdev_deinit(zx_card_t *zx)
+ {
+-    struct zx_fbdev *fbdev = zx->fbdev;
+-    struct drm_zx_framebuffer *fb;
+-    struct fb_info *info;
+-
+-    if (!fbdev)
+-    {
+-        return 0;
+-    }
+-
+-    fb = fbdev->fb;
+-#if DRM_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+-    info = fbdev->helper.fbdev;
+-#else
+-    info = fbdev->helper.info;
+-#endif
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+-    unregister_framebuffer(info);
+-#else
+-#if DRM_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+-    drm_fb_helper_unregister_fbi(&fbdev->helper);
+-#else
+-    drm_fb_helper_unregister_info(&fbdev->helper);
+-#endif
+-#endif
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+-    iounmap(info->screen_base);
+-    if (info->cmap.len)
+-        fb_dealloc_cmap(&info->cmap);
+-    framebuffer_release(info);
+-#elif DRM_VERSION_CODE < KERNEL_VERSION(4, 12, 0)
+-    drm_fb_helper_release_fbi(&fbdev->helper);
+-#endif    
+-
+-    if (fb && fb->obj)
+-    {
+-        zx_gem_object_vunmap(fb->obj);
+-        if(fb->obj->core_handle)
+-        {
+-            zx_gem_object_put(fb->obj);
+-        }
+-        else
+-        {
+-            zx_free(fb->obj);
+-        }
+-        fb->obj = NULL;
+-    }
+-
+-    drm_fb_helper_fini(&fbdev->helper);
+-    if(fbdev->fb)
+-    {
+-        drm_framebuffer_remove(&fbdev->fb->base);
+-    }
+-
+-    zx_debugfs_remove_device_node(zx->debugfs_dev, fbdev->debug);
+-    zx_core_interface->destroy_device(zx->adapter, fbdev->gpu_device);
+-
+-    zx_free(fbdev);
+-    zx->fbdev = NULL;
+-
+-    return 0;
++	/* generic fbdev 由 drm_dev_unregister 自动清理 */
++	return 0;
+ }
+ 
+ void zx_fbdev_set_suspend(zx_card_t *zx, int state)
+ {
+-    struct zx_fbdev *fbdev = zx->fbdev;
+-    struct fb_info *info;
+-
+-    if (fbdev)
+-    {
+-#if DRM_VERSION_CODE < KERNEL_VERSION(6, 2, 0)
+-        info = fbdev->helper.fbdev;
+-#else
+-	info = fbdev->helper.info;
+-#endif
+-
+-        console_lock();
+-        
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 8, 0)
+-        if (info)
+-        {
+-            fb_set_suspend(info, state);
+-        }
+-#else
+-        drm_fb_helper_set_suspend(&fbdev->helper, state);
+-#endif
+-
+-        console_unlock();
+-    }
++	/* generic fbdev 的 suspend/resume 由内核 fb 子系统处理 */
+ }
+ 
+ void zx_fbdev_poll_changed(struct drm_device *dev)
+ {
+-    zx_card_t*  zx = dev->dev_private;
+-    struct zx_fbdev *fbdev = zx->fbdev;
+-
+-#if DRM_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+-    if (fbdev && fbdev->fb)
+-#else
+-    if (fbdev)
+-#endif        
+-    {
+-        drm_fb_helper_hotplug_event(&fbdev->helper);
+-    }
++	/* 7.x 未注册此回调(zx_disp.c 以 <6.12 守卫) */
+ }
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_gem.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_gem.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_gem.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_gem.c	2026-09-27 22:35:33.297471304 +0800
+@@ -1654,7 +1654,9 @@
+ 
+ 
+         retval= vmf_insert_mixed(vma, address,
+-#if DRM_VERSION_CODE >= KERNEL_VERSION(4, 5, 0) && !(defined(YHQILIN) && DRM_VERSION_CODE == KERNEL_VERSION(4, 9, 0))
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 9, 0)
++              pfn);
++#elif DRM_VERSION_CODE >= KERNEL_VERSION(4, 5, 0) && !(defined(YHQILIN) && DRM_VERSION_CODE == KERNEL_VERSION(4, 9, 0))
+               __pfn_to_pfn_t(pfn, PFN_DEV));
+ #else
+               pfn);
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_gem.h /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_gem.h
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_gem.h	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_gem.h	2026-09-27 22:35:33.296440628 +0800
+@@ -22,7 +22,9 @@
+ 
+ #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 5, 0) || \
+     DRM_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 9, 0)
+ #include <linux/pfn_t.h>
++#endif
+ #else
+ typedef struct {
+     u64 val;
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zxgfx_trace.h /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zxgfx_trace.h
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zxgfx_trace.h	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zxgfx_trace.h	2026-09-27 22:42:01.401425008 +0800
+@@ -348,7 +348,7 @@
+     ),
+ 
+     TP_fast_assign(
+-        strncpy(__entry->desc, desc, 32);
++        strscpy(__entry->desc, desc, 32);
+     ),
+ 
+     TP_printk("begin=%s", __entry->desc)
+@@ -379,7 +379,7 @@
+     ),
+ 
+     TP_fast_assign(
+-        strncpy(__entry->desc, desc, 32);
++        strscpy(__entry->desc, desc, 32);
+         __entry->value = value;
+     ),
+ 
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_kms.h /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_kms.h
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_kms.h	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_kms.h	2026-09-27 22:59:03.474703744 +0800
+@@ -242,7 +242,7 @@
+ 
+ typedef struct
+ {
+-    struct drm_atomic_state base_ato_state;
++    struct drm_atomic_commit *base_ato_state;
+ }zx_ato_state_t;
+ 
+ #endif
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_pcie.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_pcie.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_pcie.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_pcie.c	2026-09-27 22:54:38.868419893 +0800
+@@ -410,7 +410,7 @@
+         return;
+     }
+ 
+-    drm_fb_helper_restore_fbdev_mode_unlocked(&fbdev->helper);
++    drm_fb_helper_restore_fbdev_mode_unlocked(&fbdev->helper, false);
+ }
+ 
+ #if DRM_VERSION_CODE < KERNEL_VERSION(4,11,0)
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_plane.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_plane.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_plane.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_plane.c	2026-09-27 22:59:03.475175720 +0800
+@@ -267,7 +267,7 @@
+ }
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+-int zx_plane_atomic_check(struct drm_plane *plane, struct drm_atomic_state *state)
++int zx_plane_atomic_check(struct drm_plane *plane, struct drm_atomic_commit *state)
+ #else
+ int zx_plane_atomic_check(struct drm_plane *plane, struct drm_plane_state *new_state)
+ #endif
+@@ -476,7 +476,7 @@
+ }
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+-void zx_plane_atomic_update(struct drm_plane* plane, struct drm_atomic_state* state)
++void zx_plane_atomic_update(struct drm_plane* plane, struct drm_atomic_commit* state)
+ #else
+ void zx_plane_atomic_update(struct drm_plane* plane, struct drm_plane_state* old_state)
+ #endif
+@@ -515,7 +515,7 @@
+ 
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+-void zx_plane_atomic_disable(struct drm_plane *plane, struct drm_atomic_state *state)
++void zx_plane_atomic_disable(struct drm_plane *plane, struct drm_atomic_commit *state)
+ #else
+ void zx_plane_atomic_disable(struct drm_plane *plane, struct drm_plane_state *old_state)
+ #endif
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_plane.h /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_plane.h
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_plane.h	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_plane.h	2026-09-27 22:59:03.475755870 +0800
+@@ -63,9 +63,9 @@
+ 
+ 
+ #if DRM_VERSION_CODE >= KERNEL_VERSION(5, 13, 0)
+-int zx_plane_atomic_check(struct drm_plane *plane, struct drm_atomic_state *state);
+-void zx_plane_atomic_update(struct drm_plane *plane,  struct drm_atomic_state *state);
+-void zx_plane_atomic_disable(struct drm_plane *plane, struct drm_atomic_state *state);
++int zx_plane_atomic_check(struct drm_plane *plane, struct drm_atomic_commit *state);
++void zx_plane_atomic_update(struct drm_plane *plane,  struct drm_atomic_commit *state);
++void zx_plane_atomic_disable(struct drm_plane *plane, struct drm_atomic_commit *state);
+ #else
+ int zx_plane_atomic_check(struct drm_plane *plane, struct drm_plane_state *new_state);
+ void zx_plane_atomic_update(struct drm_plane *plane,  struct drm_plane_state *old_state);
+diff -ruN '--exclude=objs' '--exclude=*.o' '--exclude=*.ko' '--exclude=*.mod*' '--exclude=.tmp*' '--exclude=Module.symvers' '--exclude=*.cmd' '--exclude=*.order' /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_sysfs.c /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_sysfs.c
+--- /tmp/zx-orig/usr/src/zx-21.00.91/src/zx_sysfs.c	2026-07-15 14:32:39.000000000 +0800
++++ /home/athena/C960_Project/zx-src-official/usr/src/zx-21.00.91/src/zx_sysfs.c	2026-09-27 22:54:38.869097795 +0800
+@@ -212,7 +212,7 @@
+     NULL
+ };
+ 
+-static ssize_t zx_sysfs_trace_read(struct file *filp, struct kobject *kobj, struct bin_attribute *bin_attr, char *buf, loff_t pos, size_t size)
++static ssize_t zx_sysfs_trace_read(struct file *filp, struct kobject *kobj, const struct bin_attribute *bin_attr, char *buf, loff_t pos, size_t size)
+ {
+     struct pci_dev*    pdev    = to_pci_dev(kobj_to_dev(kobj));
+     struct drm_device* drm_dev = pci_get_drvdata(pdev);
+@@ -231,7 +231,7 @@
+     return ret;
+ }
+ 
+-static ssize_t zx_sysfs_trace_write(struct file *filp, struct kobject *kobj, struct bin_attribute *bin_attr, char *buf, loff_t pos, size_t size)
++static ssize_t zx_sysfs_trace_write(struct file *filp, struct kobject *kobj, const struct bin_attribute *bin_attr, char *buf, loff_t pos, size_t size)
+ {
+     struct pci_dev*    pdev    = to_pci_dev(kobj_to_dev(kobj));
+     struct drm_device* drm_dev = pci_get_drvdata(pdev);
