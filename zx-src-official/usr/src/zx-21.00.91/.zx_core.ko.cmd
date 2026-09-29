@@ -1,0 +1,1 @@
+savedcmd_zx_core.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T /usr/src/kernels/7.2.7-200.fc44.x86_64/scripts/module.lds -o zx_core.ko zx_core.o zx_core.mod.o .module-common.o

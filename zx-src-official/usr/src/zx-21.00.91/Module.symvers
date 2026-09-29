@@ -1,0 +1,5 @@
+0x00000000	krnl_get_core_interface	zx_core	EXPORT_SYMBOL	
+0x00000000	zx_hang_dump	zx_core	EXPORT_SYMBOL	
+0x00000000	zx_run_on_qt	zx_core	EXPORT_SYMBOL	
+0x00000000	zx_reboot_patch	zx_core	EXPORT_SYMBOL	
+0x00000000	zx_freezable_patch	zx_core	EXPORT_SYMBOL	
