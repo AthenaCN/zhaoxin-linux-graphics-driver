@@ -1,6 +1,6 @@
 # 兆芯 KX-6000 C-960 显卡驱动 Fedora 44 移植
 
-让兆芯 KX-6000（C-960 核显）在 Fedora 44（内核 7.2.7）上跑起来自编译显卡驱动：编译加载、内置 eDP 屏点亮、原生分辨率、正确色彩、3D 渲染、开机自动加载全部打通。
+让兆芯 KX-6000（C-960 核显）在 Fedora 44（内核 7.2.7）上跑起来自编译显卡驱动：编译加载、内置 eDP 屏点亮、原生分辨率、正确色彩、开机自动加载全部打通。3D 显示可用（llvmpipe 软渲染）；用户态 GL 硬件加速因闭源无源码暂不可得，详见"用户态 GL"章节。
 
 > 🎯 本项目在 [豆包 AI 助手「豆老师」](https://www.doubao.com) 的全程协助下完成。从编译报错压不住、黑屏无背光，到逐条定位根因并点亮屏幕、配好开机自启，全靠豆老师的耐心排查与逐轮打补丁迭代。
 
@@ -35,7 +35,8 @@
 | 内置屏点亮 | ✅ 链路训练 `link=2700000 lane=2 bpc=8` + 上电 + PWM 全通 |
 | 色彩正确 | ✅ XR30 格式修复，不再花屏 |
 | 原生分辨率 | ✅ 1920×1200 (16:10) |
-| 3D 渲染 | ✅ 正常出画面 |
+| 3D 显示 | ⚠️ 正常出画面，但为 llvmpipe **软渲染**（桌面/办公/视频足够） |
+| 用户态 GL 硬件加速 | ❌ 闭源二进制、无源码，Fedora 44 ABI 不兼容（详见"用户态 GL"章节） |
 | 开机自动加载 | ✅ 重启即用，无需手动 insmod |
 
 ## 📁 文件说明
@@ -165,17 +166,25 @@ TMX2003 不在 cbios 面板表，落 Default_EDP_Desc（Init/OnOff/SetBacklight 
 
 ---
 
-## 🔍 后续验收（用户态 GL）
+## 🔍 用户态 GL / 3D 硬件加速（最终结论）
 
-3D 能出图 ≠ 一定是硬件加速。建议确认渲染器是否走了 C-960 硬件，而非 llvmpipe 软渲染回退：
+**实测渲染器**：Fedora 44 上 `eglinfo -B` 显示全平台 `llvmpipe (LLVM 22.1.8)`——3D 出图走的是 **软渲染**，不是 C-960 硬件加速。
 
-```bash
-glxinfo -B 2>/dev/null | grep -iE "OpenGL renderer|GL_RENDERER"
-eglinfo 2>/dev/null | grep -iE "platform|device"
-```
+**为什么没有硬件加速**：
+1. Fedora 的 Mesa 不含兆芯 DRI 驱动（`/usr/lib64/dri/` 仅 `kms_swrast` / `vkms`）
+2. 尝试接线官方 21.00.91 用户态 GL 栈（`libEGL_zx` / `libGLX_zx` / `zx_vndri` 等）→ EGL 初始化失败 + 段错误（exit 139）
+3. 用户态 GL 为**闭源二进制**，无公开源码可重编
 
-- 显示 **llvmpipe / softpipe / SwiftShader** → 软渲染回退，需接线官方用户态 GL（21.00.91 包内含 GL/GLVND/dri/gbm 全套）
-- 显示 **Zhaoxin / zx / C-960 相关** → 硬件加速已生效
+**闭源核实证据**：
+- Deepin 将其放入 **non-free（专有软件）仓库**——开源软件在 `main`，专有二进制在 `non-free`
+- Mesa 官方源码树 gallium 硬件驱动列表**无** zhaoxin / zx / via / s3 任何一项
+- 兆芯往开源社区提交的代码（内核 PMU / MCE / I2C / HDA 声卡）全是 **CPU / IO / 音频**，**无 GPU 3D 驱动**
+- 官方只发二进制（UOS / 麒麟 / 方德）；"原生 Linux 开箱即用"指的是**预装了闭源驱动的发行版**，不是源码公开
+- `libEGL_zx` 实为 **Mesa 的商用改造**（EGL vendor 串仍是 `Mesa Project`），但核心 gallium 硬件实现闭源
+
+**C-960 硬件 GL 上限**：约 OpenGL 3.2 / GLSL 1.5（osgVerse 硬件测试记录，且其 Texture 仍有段错误）——即便有硬件加速，收益也有限。
+
+**结论**：3D 停留在 llvmpipe 软渲染，为本项目既定收尾状态。桌面 / 办公 / 浏览器 / 视频场景完全够用；如需硬件 3D 加速，需等兆芯开放源码，或在预装闭源驱动的发行版（UOS / 麒麟 / Deepin / OpenEuler）上使用。
 
 ## 🌐 移植到其他机器
 
@@ -188,6 +197,7 @@ eglinfo 2>/dev/null | grep -iE "platform|device"
 - 驱动未签名（OOT 模块），加载有 `module verification failed` 提示，属正常
 - `cbEDPPanel_Init/OnOff not implemented` 警告为原始代码默认面板行为，不影响功能
 - 开机阶段会先闪 simpledrm 再切换 zx（`zx-gpu-autoload.sh` 已通过 initramfs 尽量提前加载）
+- 3D 为 llvmpipe **软渲染**（用户态 GL 闭源无解），属本项目的既定收尾状态
 
 ---
 
